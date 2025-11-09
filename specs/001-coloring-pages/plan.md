@@ -11,11 +11,11 @@ Building an iPad-native coloring app for children ages 3-8 with Apple Pencil sup
 
 ## Technical Context
 
-**Language/Version**: Swift (version NEEDS CLARIFICATION - research latest stable for iOS development)  
-**Primary Dependencies**: NEEDS CLARIFICATION (research: SwiftUI vs UIKit for UI framework, PencilKit vs custom drawing for Apple Pencil integration, PhotoKit for image importing)  
-**Storage**: NEEDS CLARIFICATION (research: CoreData vs simple file-based storage for local artwork persistence, evaluate trade-offs for learning project)  
-**Testing**: XCTest (iOS native testing framework)  
-**Target Platform**: iOS 15+ on iPad (research minimum version requirements for Apple Pencil APIs)  
+**Language/Version**: Swift 5.9+ (latest stable, bundled with Xcode 15+)  
+**Primary Dependencies**: SwiftUI (primary UI framework with UIKit interop for drawing canvas), PencilKit (Apple Pencil drawing framework, optimized for low latency), PHPickerViewController (iOS 14+ photo picker for importing custom coloring pages)  
+**Storage**: File-based storage (FileManager + Codable for artwork persistence)  
+**Testing**: XCTest (native iOS testing framework)  
+**Target Platform**: iOS 15.0+ on iPad  
 **Project Type**: Mobile (single iOS app)  
 **Performance Goals**:
 
@@ -41,11 +41,11 @@ Building an iPad-native coloring app for children ages 3-8 with Apple Pencil sup
 
 **Learning Context** (first-time iOS developer):
 
-- NEEDS CLARIFICATION: Best IDE setup (Xcode installation, configuration)
-- NEEDS CLARIFICATION: Local deployment workflow (sideloading to iPad vs TestFlight)
-- NEEDS CLARIFICATION: Apple Developer account requirements (free vs paid, what's needed for household testing)
-- NEEDS CLARIFICATION: Code signing and provisioning profiles basics
-- NEEDS CLARIFICATION: Simulator testing capabilities and limitations for this app
+- **IDE Setup**: Install Xcode 15+ from Mac App Store (free, ~15GB), requires macOS Ventura 13.0+
+- **Development Workflow**: Use iOS Simulator for rapid iteration, test on physical iPad weekly for Apple Pencil validation
+- **Deployment**: Start with free Apple ID for sideloading (7-day expiration, 3-device limit), consider paid account ($99/year) for TestFlight if needed
+- **Code Signing**: Use Xcode's automatic signing with personal team (beginner-friendly)
+- **Testing Approach**: Simulator sufficient for UI/logic, physical iPad required for Apple Pencil testing and performance validation
 
 ## Constitution Check
 
