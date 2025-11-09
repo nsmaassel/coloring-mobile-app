@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug iOS App",
+      "program": "${workspaceFolder}/ColoringApp/DerivedData/Build/Products/Debug-iphonesimulator/ColoringApp.app",
+      "preLaunchTask": "Build iOS App (Simulator)",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
