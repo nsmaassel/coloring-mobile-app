@@ -40,12 +40,25 @@ This workspace is configured for VS Code + GitHub Copilot assistance:
    - Git operations and file management
    - Terminal commands
 
+### GitHub Copilot Agents
+
+This project includes specialized GitHub Copilot agents to assist with iOS development:
+
+- **[ios-developer](.github/agents/ios-developer.md)** - General iOS development expert
+- **[swiftui-expert](.github/agents/swiftui-expert.md)** - SwiftUI UI design specialist
+- **[pencilkit-specialist](.github/agents/pencilkit-specialist.md)** - Apple Pencil & drawing expert
+- **[testing-specialist](.github/agents/testing-specialist.md)** - Testing & TDD expert
+- **[architecture-guide](.github/agents/architecture-guide.md)** - Architecture patterns guide
+
+See [.github/agents/README.md](.github/agents/README.md) for usage instructions.
+
 ### Why Hybrid Workflow?
 
 **VS Code on Windows** cannot build/run iOS apps, but is **excellent** for:
 
 - 📝 Drafting Swift code with GitHub Copilot's full assistance
 - 💬 Copilot Chat for learning and explanations
+- 🤖 Access to specialized Copilot agents for domain expertise
 - 📚 Documentation and planning
 - 🔧 Git operations without needing Mac
 

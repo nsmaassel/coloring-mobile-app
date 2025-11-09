@@ -62,8 +62,21 @@ ColoringApp/
 - Dependency injection via protocol conformance
 - Feature-based modular organization
 
+## Specialized Agents
+
+This project includes specialized GitHub Copilot agents for domain-specific assistance:
+
+- **[ios-developer](./agents/ios-developer.md)** - General iOS development, Swift, frameworks, Xcode
+- **[swiftui-expert](./agents/swiftui-expert.md)** - SwiftUI views, state management, layouts
+- **[pencilkit-specialist](./agents/pencilkit-specialist.md)** - Apple Pencil, drawing, performance optimization
+- **[testing-specialist](./agents/testing-specialist.md)** - XCTest, UI testing, TDD practices
+- **[architecture-guide](./agents/architecture-guide.md)** - MVVM, protocols, dependency injection
+
+See [agents/README.md](./agents/README.md) for detailed usage instructions and agent coordination.
+
 ## Recent Changes
 
+- 2025-11-09: Added GitHub Copilot agent configurations for specialized iOS development assistance
 - 001-coloring-pages: Added Swift 5.9+ with SwiftUI + PencilKit architecture for iPad drawing app with Apple Pencil support
 
 <!-- MANUAL ADDITIONS START -->
