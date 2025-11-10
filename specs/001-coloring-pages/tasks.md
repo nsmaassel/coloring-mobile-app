@@ -1,603 +1,326 @@
-# Implementation Tasks: Interactive Coloring Pages
+# Tasks: Interactive Coloring Pages
 
 **Branch**: `001-coloring-pages` | **Generated**: 2025-11-09  
-**Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md)
+**Input**: Design documents from `specs/001-coloring-pages/` ([spec.md](./spec.md), [plan.md](./plan.md), [data-model.md](./data-model.md), [contracts/](./contracts/), [research.md](./research.md))
 
-This document breaks down the feature into actionable implementation tasks organized by priority and dependency. Each task includes acceptance criteria, complexity estimates, and implementation notes.
+**Tests**: Not explicitly requested in spec - focusing on implementation tasks only.
 
----
+**Organization**: Tasks grouped by user story to enable independent implementation and testing of each story.
 
-## Phase P0: Project Setup
+## Format: `[ID] [P?] [Story] Description`
 
-### Task P0.1: Create Xcode Project
-**Priority**: P0 (blocking all development)  
-**Complexity**: Simple (1-2 hours)  
-**Dependencies**: None  
-**Owner**: Developer (on Mac)
+- **[P]**: Can run in parallel (different files, no dependencies)
+- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
+- Include exact file paths in descriptions
 
-**Description**: Create the ColoringApp Xcode project with proper configuration for iPad development and Apple Pencil support.
+## Path Conventions
 
-**Acceptance Criteria**:
-- [ ] Xcode project created with iOS App template
-- [ ] Deployment target set to iOS 15.0
-- [ ] Device families restricted to iPad only
-- [ ] Project structure matches `plan.md` (feature-based modules)
-- [ ] Git repository initialized and linked to remote
-- [ ] Project builds successfully in Simulator
+iOS Xcode project structure per [plan.md](./plan.md):
 
-**Implementation Notes**:
-- Follow `quickstart.md` Section 3 (Creating Your First iOS Project)
-- Use SwiftUI App template
-- Configure bundle identifier: `com.yourname.ColoringApp`
-- Enable automatic code signing with free Apple ID
-- Test build on iPad Simulator before proceeding
+- `ColoringApp/ColoringApp/` - Main app target source code
+- `ColoringApp/ColoringAppTests/` - Unit tests
+- `ColoringApp/ColoringAppUITests/` - UI automation tests
 
 ---
 
-### Task P0.2: Add Built-in Coloring Pages
-**Priority**: P0 (required for P1 testing)  
-**Complexity**: Simple (30 min)  
-**Dependencies**: P0.1  
-**Owner**: Developer
+## Phase 1: Setup (Shared Infrastructure)
 
-**Description**: Add at least 3 simple line-art coloring page images to the project as bundled resources.
+**Purpose**: Xcode project initialization and basic structure on Mac
 
-**Acceptance Criteria**:
-- [ ] 3+ PNG images added to `ColoringApp/Resources/ColoringPages/`
-- [ ] Images are black-and-white line art suitable for ages 3-8
-- [ ] Images added to asset catalog with appropriate names
-- [ ] Images accessible via Bundle at runtime
-- [ ] Test images display correctly in Simulator
-
-**Implementation Notes**:
-- Use simple line art (animals, shapes, vehicles)
-- Recommended size: 2048x2048 @2x for Retina displays
-- Format: PNG with transparency
-- Reference: `data-model.md` Section 1.1 (ColoringPage entity)
+- [ ] T001 Create Xcode project ColoringApp.xcodeproj following quickstart.md Section 3 (iOS App template, iPad only, iOS 15.0+)
+- [ ] T002 [P] Add 3 built-in coloring page PNG images to ColoringApp/Resources/ColoringPages/ (simple line art for ages 3-8)
+- [ ] T003 [P] Configure automatic code signing with free Apple ID in Xcode project settings
+- [ ] T004 Test build on iPad Simulator to verify project setup
 
 ---
 
-## Phase P1: Core Coloring Experience
+## Phase 2: Foundational (Blocking Prerequisites)
 
-### Task P1.1: ColoringPage Repository & Gallery View
-**Priority**: P1 (User Story 1)  
-**Complexity**: Medium (3-4 hours)  
-**Dependencies**: P0.1, P0.2  
-**Owner**: Developer
+**Purpose**: Core protocols and storage infrastructure that ALL user stories depend on
 
-**Description**: Implement the coloring page gallery screen showing available templates. Users can browse and select pages.
+**⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-**Acceptance Criteria**:
-- [ ] `ColoringPageRepository` protocol implemented (see `contracts/README.md`)
-- [ ] Gallery view displays thumbnails of all available coloring pages
-- [ ] Tapping a thumbnail navigates to DrawingCanvas view
-- [ ] Loading spinner shown during page load
-- [ ] Gallery displays at app launch
-- [ ] Test: Can launch app, see 3+ thumbnails, tap one, see it load
+- [ ] T005 [P] Create ColoringPage model (Codable struct) in ColoringApp/Features/ColoringPageGallery/Models/ColoringPage.swift per data-model.md Section 1
+- [ ] T006 [P] Create Artwork model (Codable struct) in ColoringApp/Core/Storage/Artwork.swift per data-model.md Section 2
+- [ ] T007 [P] Create Brush model (struct) in ColoringApp/Features/BrushTools/Models/Brush.swift per data-model.md Section 4
+- [ ] T008 [P] Define ColoringPageRepositoryProtocol in ColoringApp/Core/Storage/ColoringPageRepository.swift per contracts/ README.md Section 1
+- [ ] T009 [P] Define ArtworkRepositoryProtocol in ColoringApp/Core/Storage/ArtworkRepository.swift per contracts/ README.md Section 2
+- [ ] T010 [P] Define DrawingEngineProtocol in ColoringApp/Core/Storage/DrawingEngine.swift per contracts/ README.md Section 3
+- [ ] T011 [P] Create StorageError enum in ColoringApp/Core/Storage/StorageError.swift per data-model.md validation section
+- [ ] T012 Implement ColoringPageRepository (file-based storage) in ColoringApp/Core/Storage/ColoringPageRepository.swift (depends on T005, T008, T011)
+- [ ] T013 Create FileManager extensions for directory management in ColoringApp/Core/Utilities/FileManagerExtensions.swift
 
-**Implementation Notes**:
-- Use SwiftUI `ScrollView` with `LazyVGrid` for gallery layout
-- Protocol: `ColoringPageRepositoryProtocol` from contracts
-- Model: `ColoringPage` struct from `data-model.md`
-- Load built-in pages from Bundle using `Bundle.main.url(forResource:withExtension:)`
-- Thumbnail generation: Scale images to 300x300 for grid display
-- Navigation: Use `NavigationStack` (iOS 16+) or `NavigationView`
-
-**Files to Create**:
-- `Features/ColoringPageGallery/Views/ColoringPageGalleryView.swift`
-- `Features/ColoringPageGallery/ViewModels/ColoringPageGalleryViewModel.swift`
-- `Core/Storage/ColoringPageRepository.swift`
+**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
 ---
 
-### Task P1.2: Drawing Canvas with PencilKit
-**Priority**: P1 (User Story 2 - foundation)  
-**Complexity**: Medium (4-5 hours)  
-**Dependencies**: P1.1  
-**Owner**: Developer
+## Phase 3: User Story 1 - Select and Open Coloring Page (Priority: P1) 🎯 MVP
 
-**Description**: Implement the drawing canvas using PencilKit. Display selected coloring page as background, support Apple Pencil and touch drawing.
+**Goal**: Child can launch app, see gallery of coloring pages, tap one, and see it load full-screen
 
-**Acceptance Criteria**:
-- [ ] `PKCanvasView` integrated via `UIViewRepresentable`
-- [ ] Selected coloring page displays as canvas background
-- [ ] Can draw strokes with finger (touch input works)
-- [ ] Can draw strokes with Apple Pencil (if available)
-- [ ] Strokes appear immediately with minimal lag (<20ms target)
-- [ ] Test: Load page, draw with finger, see strokes appear instantly
+**Independent Test**: Launch app → see 3+ thumbnails → tap one → page loads in canvas within 1 second
 
-**Implementation Notes**:
-- Use PencilKit's `PKCanvasView` (iOS 13+) wrapped in SwiftUI
-- Set canvas background to coloring page image (scaled to fit)
-- PencilKit handles Apple Pencil pressure/tilt automatically
-- Configure `PKCanvasView.tool` with `PKInkingTool` for drawing
-- Disable ruler tool (not needed for coloring)
-- Reference: `research.md` Section 3 (PencilKit Specialist)
+### Implementation for User Story 1
 
-**Files to Create**:
-- `Features/DrawingCanvas/Views/DrawingCanvasView.swift`
-- `Features/DrawingCanvas/Views/PKCanvasViewRepresentable.swift`
-- `Features/DrawingCanvas/ViewModels/DrawingCanvasViewModel.swift`
+- [ ] T014 [P] [US1] Create ColoringPageGalleryView (SwiftUI) in ColoringApp/Features/ColoringPageGallery/Views/ColoringPageGalleryView.swift (LazyVGrid with thumbnails)
+- [ ] T015 [P] [US1] Create ColoringPageGalleryViewModel (ObservableObject) in ColoringApp/Features/ColoringPageGallery/ViewModels/ColoringPageGalleryViewModel.swift (uses ColoringPageRepository)
+- [ ] T016 [US1] Implement loadAll() in ColoringPageRepository to load built-in pages from Bundle (depends on T012)
+- [ ] T017 [US1] Add navigation from gallery to DrawingCanvasView using NavigationStack in ColoringPageGalleryView.swift
+- [ ] T018 [US1] Create DrawingCanvasView (SwiftUI) in ColoringApp/Features/DrawingCanvas/Views/DrawingCanvasView.swift (displays coloring page as background)
+- [ ] T019 [US1] Update ColoringAppApp.swift entry point to show ColoringPageGalleryView as root view
+
+**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently (can select and view pages)
 
 ---
 
-### Task P1.3: Basic Color Palette
-**Priority**: P1 (User Story 2 - colors)  
-**Complexity**: Simple (2-3 hours)  
-**Dependencies**: P1.2  
-**Owner**: Developer
+## Phase 4: User Story 2 - Color with Basic Brushes (Priority: P1)
 
-**Description**: Add a color selection palette with 12+ vibrant colors. Selecting a color changes the active drawing color.
+**Goal**: Child can draw colored strokes on canvas with finger or Apple Pencil, switch between 12+ colors
 
-**Acceptance Criteria**:
-- [ ] Palette displays 12+ distinct, vibrant colors
-- [ ] Colors arranged in accessible grid (44x44pt touch targets minimum)
-- [ ] Tapping a color changes active `PKInkingTool` color
-- [ ] Selected color has clear visual indication (border/glow)
-- [ ] Palette visible while drawing (overlay or side panel)
-- [ ] Test: Select red, draw, select blue, draw, see different colored strokes
+**Independent Test**: Load page → select red → draw → select blue → draw → see both colored strokes
 
-**Implementation Notes**:
-- Define color palette in `Brush` model (see `data-model.md` Section 4)
-- Use SwiftUI `HStack`/`VStack` or `LazyVGrid` for color buttons
-- Update `PKCanvasView.tool` when color changes: `PKInkingTool(.pen, color: selectedColor)`
-- Predefined colors: red, orange, yellow, green, blue, purple, pink, brown, black, white, gray, cyan
-- Use iOS system colors where appropriate (`.red`, `.blue`, etc.)
+### Implementation for User Story 2
 
-**Files to Create**:
-- `Features/BrushTools/Views/ColorPaletteView.swift`
-- `Features/BrushTools/Models/Brush.swift`
+- [ ] T020 [P] [US2] Create PKCanvasViewRepresentable (UIViewRepresentable wrapper) in ColoringApp/Features/DrawingCanvas/Views/PKCanvasViewRepresentable.swift (wraps PencilKit PKCanvasView)
+- [ ] T021 [P] [US2] Create ColorPaletteView (SwiftUI) in ColoringApp/Features/BrushTools/Views/ColorPaletteView.swift (grid of 12 color buttons, 44x44pt touch targets)
+- [ ] T022 [P] [US2] Create DrawingCanvasViewModel (ObservableObject) in ColoringApp/Features/DrawingCanvas/ViewModels/DrawingCanvasViewModel.swift (manages PKInkingTool state)
+- [ ] T023 [US2] Integrate PKCanvasViewRepresentable into DrawingCanvasView to enable drawing (depends on T018, T020)
+- [ ] T024 [US2] Wire color selection from ColorPaletteView to update PKInkingTool.color in DrawingCanvasViewModel (depends on T021, T022)
+- [ ] T025 [US2] Add ColorPaletteView overlay to DrawingCanvasView for color selection UI
+- [ ] T026 [US2] Configure PKCanvasView for touch and Apple Pencil input (allowsFingerDrawing = true, minimumZoomScale = 1.0)
+
+**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently (can select pages and color them)
 
 ---
 
-### Task P1.4: Eraser Tool
-**Priority**: P1 (User Story 3 - eraser)  
-**Complexity**: Simple (1-2 hours)  
-**Dependencies**: P1.2  
-**Owner**: Developer
+## Phase 5: User Story 3 - Erase and Undo Mistakes (Priority: P1)
 
-**Description**: Add an eraser tool that removes strokes when dragged over colored areas.
+**Goal**: Child can erase strokes or undo/redo actions to fix mistakes
 
-**Acceptance Criteria**:
-- [ ] Eraser button visible in tool palette
-- [ ] Tapping eraser activates eraser mode
-- [ ] Active eraser has clear visual indication
-- [ ] Dragging eraser removes existing strokes
-- [ ] Switching back to color deactivates eraser
-- [ ] Test: Draw strokes, activate eraser, erase part of drawing
+**Independent Test**: Draw strokes → tap eraser → erase → tap undo → stroke restored → tap redo → stroke removed again
 
-**Implementation Notes**:
-- PencilKit provides built-in eraser: `PKEraserTool(.vector)` or `.bitmap`
-- Use vector eraser (removes entire strokes) for simplicity
-- Toggle between `PKInkingTool` (color) and `PKEraserTool` (eraser)
-- Update `PKCanvasView.tool` when eraser selected
-- Visual indication: Highlight eraser button, change cursor (iOS may do this automatically)
+### Implementation for User Story 3
 
-**Files to Update**:
-- `Features/BrushTools/Views/ColorPaletteView.swift` (add eraser button)
-- `Features/DrawingCanvas/ViewModels/DrawingCanvasViewModel.swift` (tool switching logic)
+- [ ] T027 [P] [US3] Add eraser button to ColorPaletteView that switches PKCanvasView.tool to PKEraserTool(.vector) in ColoringApp/Features/BrushTools/Views/ColorPaletteView.swift
+- [ ] T028 [P] [US3] Add undo button to DrawingCanvasView toolbar that calls PKCanvasView.undoManager.undo() in ColoringApp/Features/DrawingCanvas/Views/DrawingCanvasView.swift
+- [ ] T029 [P] [US3] Add redo button to DrawingCanvasView toolbar that calls PKCanvasView.undoManager.redo() in ColoringApp/Features/DrawingCanvas/Views/DrawingCanvasView.swift
+- [ ] T030 [US3] Disable undo/redo buttons when canUndo/canRedo is false using @Published state in DrawingCanvasViewModel
+- [ ] T031 [US3] Add visual indication for active tool (border/highlight) in ColorPaletteView when eraser selected
+
+**Checkpoint**: All P1 user stories complete - MVP ready for testing on physical iPad
 
 ---
 
-### Task P1.5: Undo/Redo Functionality
-**Priority**: P1 (User Story 3 - undo)  
-**Complexity**: Simple (1 hour)  
-**Dependencies**: P1.2  
-**Owner**: Developer
+## Phase 6: User Story 4 - Save Completed Artwork (Priority: P2)
 
-**Description**: Add undo and redo buttons that reverse/restore drawing actions.
+**Goal**: Child can save colored artwork, view gallery of saved art, reopen for continued editing
 
-**Acceptance Criteria**:
-- [ ] Undo button visible in UI
-- [ ] Redo button visible in UI
-- [ ] Tapping undo removes most recent stroke
-- [ ] Tapping redo restores most recently undone stroke
-- [ ] Buttons disabled when no actions available
-- [ ] Test: Draw 3 strokes, undo 2, redo 1, verify correct stroke history
+**Independent Test**: Color page → save → start new page → go to gallery → see saved thumbnail → tap → artwork loads with strokes intact
 
-**Implementation Notes**:
-- PencilKit provides built-in undo/redo via `PKCanvasView.undoManager`
-- Wire undo/redo buttons to `canvasView.undoManager?.undo()` and `redo()`
-- Disable buttons based on `undoManager?.canUndo` / `canRedo` state
-- Use SF Symbols: `arrow.uturn.backward` (undo), `arrow.uturn.forward` (redo)
+### Implementation for User Story 4
 
-**Files to Update**:
-- `Features/DrawingCanvas/Views/DrawingCanvasView.swift` (add undo/redo buttons)
-- `Features/DrawingCanvas/ViewModels/DrawingCanvasViewModel.swift` (undo/redo actions)
+- [ ] T032 [P] [US4] Implement ArtworkRepository save() method in ColoringApp/Core/Storage/ArtworkRepository.swift (saves PKDrawing.dataRepresentation() + metadata JSON)
+- [ ] T033 [P] [US4] Implement ArtworkRepository loadAllMetadata() method to list saved artworks in ColoringApp/Core/Storage/ArtworkRepository.swift
+- [ ] T034 [P] [US4] Implement ArtworkRepository loadDrawing() method to load PKDrawing from file in ColoringApp/Core/Storage/ArtworkRepository.swift
+- [ ] T035 [P] [US4] Create ArtworkGalleryView (SwiftUI) in ColoringApp/Features/ArtworkGallery/Views/ArtworkGalleryView.swift (LazyVGrid with saved artwork thumbnails)
+- [ ] T036 [P] [US4] Create ArtworkGalleryViewModel (ObservableObject) in ColoringApp/Features/ArtworkGallery/ViewModels/ArtworkGalleryViewModel.swift (uses ArtworkRepository)
+- [ ] T037 [US4] Add save button to DrawingCanvasView toolbar that calls ArtworkRepository.save() in DrawingCanvasViewModel
+- [ ] T038 [US4] Generate thumbnail using PKDrawing.image(from:scale:) when saving in DrawingCanvasViewModel
+- [ ] T039 [US4] Add navigation tab/button to access ArtworkGalleryView from ColoringPageGalleryView
+- [ ] T040 [US4] Implement loadDrawing() in DrawingCanvasViewModel to reopen saved artwork (sets PKCanvasView.drawing and background image)
+- [ ] T041 [US4] Add auto-save on app backgrounding using scenePhase observer in DrawingCanvasView
+
+**Checkpoint**: At this point, User Stories 1-4 complete - artwork persistence working
 
 ---
 
-## Phase P2: Persistence & Custom Content
+## Phase 7: User Story 5 - Add Custom Coloring Pages (Priority: P2)
 
-### Task P2.1: Artwork Storage Repository
-**Priority**: P2 (User Story 4 - foundation)  
-**Complexity**: Medium (3-4 hours)  
-**Dependencies**: P1.2  
-**Owner**: Developer
+**Goal**: Parent can import custom coloring page images from photo library
 
-**Description**: Implement file-based storage for saving and loading artwork. Uses FileManager and Codable for persistence.
+**Independent Test**: Tap add button → select photo → see it in gallery → select → color it
 
-**Acceptance Criteria**:
-- [ ] `ArtworkRepository` protocol implemented (see `contracts/README.md`)
-- [ ] Can save artwork with metadata and drawing data (PKDrawing)
-- [ ] Can load saved artwork metadata (list of all saved artworks)
-- [ ] Can load specific artwork drawing data (PKDrawing)
-- [ ] File system structure matches `data-model.md` (Documents/Artworks/)
-- [ ] Test: Save artwork, restart app, load artwork, verify strokes preserved
+### Implementation for User Story 5
 
-**Implementation Notes**:
-- Protocol: `ArtworkRepositoryProtocol` from contracts
-- Model: `Artwork` struct from `data-model.md`
-- Storage location: `FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)`
-- Directory structure:
-  ```
-  Documents/
-    Artworks/
-      {uuid}/
-        metadata.json    (Artwork struct as JSON via Codable)
-        drawing.data     (PKDrawing serialized via PKDrawing.dataRepresentation())
-        thumbnail.png    (optional, for gallery)
-  ```
-- Use async/await for file operations (avoid blocking main thread)
+- [ ] T042 [P] [US5] Create PhotoPickerView (UIViewControllerRepresentable wrapper) in ColoringApp/Features/ColoringPageGallery/Views/PhotoPickerView.swift (wraps PHPickerViewController)
+- [ ] T043 [P] [US5] Create ImageProcessor protocol and implementation in ColoringApp/Core/Utilities/ImageProcessor.swift per contracts/ README.md Section 4 (scale, validate, optimize images)
+- [ ] T044 [US5] Implement importCustomPage() in ColoringPageRepository to save imported images to Documents/coloring-pages/ in ColoringApp/Core/Storage/ColoringPageRepository.swift
+- [ ] T045 [US5] Add "Add Coloring Page" button to ColoringPageGalleryView that presents PhotoPickerView
+- [ ] T046 [US5] Wire PhotoPickerView selection to call ColoringPageRepository.importCustomPage() in ColoringPageGalleryViewModel
+- [ ] T047 [US5] Update ColoringPageRepository.loadAll() to include custom pages from Documents/ in addition to built-in pages
 
-**Files to Create**:
-- `Core/Storage/ArtworkRepository.swift`
-- `Core/Storage/FileManagerExtensions.swift` (helper methods)
-- `Core/Storage/StorageError.swift` (error types from `data-model.md`)
+**Checkpoint**: At this point, User Stories 1-5 complete - custom page import working
 
 ---
 
-### Task P2.2: Save Artwork Functionality
-**Priority**: P2 (User Story 4 - save)  
-**Complexity**: Simple (2 hours)  
-**Dependencies**: P2.1  
-**Owner**: Developer
+## Phase 8: User Story 6 - Use Fun Special Brushes (Priority: P3)
 
-**Description**: Add a save button to the drawing canvas. Saves current drawing and metadata to persistent storage.
+**Goal**: Child can use rainbow and sparkle brush effects for creative variety
 
-**Acceptance Criteria**:
-- [ ] Save button visible in drawing canvas UI
-- [ ] Tapping save persists current PKDrawing to disk
-- [ ] Save includes metadata (timestamp, coloring page reference)
-- [ ] Success confirmation shown (alert or toast)
-- [ ] Test: Color a page, tap save, verify file created in Documents directory
+**Independent Test**: Select rainbow → draw → see gradient colors → select sparkle → draw → see glitter effect
 
-**Implementation Notes**:
-- Save button in toolbar (SF Symbol: `square.and.arrow.down`)
-- Call `artworkRepository.save(artwork:drawing:)` from ViewModel
-- Generate thumbnail using `PKCanvasView.drawing.image(from:scale:)`
-- Show SwiftUI alert on success: "Artwork saved!"
-- Handle errors gracefully (show error message if save fails)
+### Implementation for User Story 6
 
-**Files to Update**:
-- `Features/DrawingCanvas/Views/DrawingCanvasView.swift` (add save button)
-- `Features/DrawingCanvas/ViewModels/DrawingCanvasViewModel.swift` (save action)
+- [ ] T048 [P] [US6] Add BrushType enum cases for rainbow and sparkle to Brush.swift in ColoringApp/Features/BrushTools/Models/Brush.swift
+- [ ] T049 [P] [US6] Add rainbow and sparkle buttons to ColorPaletteView in ColoringApp/Features/BrushTools/Views/ColorPaletteView.swift
+- [ ] T050 [US6] Implement rainbow brush effect (cycle colors along stroke path) in DrawingCanvasViewModel custom rendering logic
+- [ ] T051 [US6] Implement sparkle brush effect (CAEmitterLayer particles) in DrawingCanvasView overlay
+- [ ] T052 [US6] Test special brush performance at 60fps minimum on iPad Simulator and physical device
+
+**Checkpoint**: At this point, User Stories 1-6 complete - special brushes working
 
 ---
 
-### Task P2.3: Artwork Gallery View
-**Priority**: P2 (User Story 4 - gallery)  
-**Complexity**: Medium (3 hours)  
-**Dependencies**: P2.1, P2.2  
-**Owner**: Developer
+## Phase 9: User Story 7 - Start Fresh with New Page (Priority: P3)
 
-**Description**: Create a gallery view showing all saved artwork. Users can browse and reopen saved art for editing.
+**Goal**: Child can navigate back to gallery and start new page with save prompt for unsaved work
 
-**Acceptance Criteria**:
-- [ ] Gallery view displays thumbnails of all saved artwork
-- [ ] Thumbnails show preview of colored page
-- [ ] Tapping thumbnail opens artwork in DrawingCanvas for editing
-- [ ] Gallery accessible from main navigation
-- [ ] Empty state shown when no saved artwork exists
-- [ ] Test: Save 3 artworks, navigate to gallery, see all 3, tap one, see it load
+**Independent Test**: Color page (don't save) → tap back → see save prompt → choose save/discard/cancel → verify correct behavior
 
-**Implementation Notes**:
-- Similar layout to ColoringPageGallery (reuse grid pattern)
-- Use `ArtworkRepository.loadAllMetadata()` to get list
-- Display thumbnails from saved thumbnail.png files
-- Navigation: `NavigationLink` to DrawingCanvasView with artwork ID
-- Empty state: "No saved artwork yet. Start coloring to save your first masterpiece!"
+### Implementation for User Story 7
 
-**Files to Create**:
-- `Features/ArtworkGallery/Views/ArtworkGalleryView.swift`
-- `Features/ArtworkGallery/ViewModels/ArtworkGalleryViewModel.swift`
+- [ ] T053 [P] [US7] Add back/home button to DrawingCanvasView navigation bar that triggers navigation back to ColoringPageGalleryView
+- [ ] T054 [US7] Implement unsaved changes detection by comparing current PKDrawing hash with last saved version in DrawingCanvasViewModel
+- [ ] T055 [US7] Add Alert with "Save", "Discard", "Cancel" options when navigating away with unsaved changes in DrawingCanvasView
+- [ ] T056 [US7] Wire "Save" option to call ArtworkRepository.save() before dismissing in DrawingCanvasViewModel
+
+**Checkpoint**: All user stories complete - full feature set implemented
 
 ---
 
-### Task P2.4: Reopen Artwork for Editing
-**Priority**: P2 (User Story 4 - reopen)  
-**Complexity**: Simple (1-2 hours)  
-**Dependencies**: P2.3  
-**Owner**: Developer
+## Phase 10: Polish & Cross-Cutting Concerns
 
-**Description**: Enable opening saved artwork from gallery back into the drawing canvas with all strokes preserved.
+**Purpose**: Improvements that affect multiple user stories
 
-**Acceptance Criteria**:
-- [ ] Tapping artwork in gallery loads it in DrawingCanvas
-- [ ] All previous strokes restored exactly as saved
-- [ ] Can continue coloring (add new strokes)
-- [ ] Can save changes (updates existing artwork file)
-- [ ] Test: Save artwork, reopen, add more strokes, save again, verify changes persist
-
-**Implementation Notes**:
-- Pass artwork ID to DrawingCanvasView via NavigationLink
-- In ViewModel `onAppear`, check if artwork ID exists:
-  - If yes: Load `PKDrawing` via `artworkRepository.loadDrawing(artworkId:)`
-  - Set `PKCanvasView.drawing = loadedDrawing`
-- Save operation updates existing file instead of creating new one
-
-**Files to Update**:
-- `Features/DrawingCanvas/Views/DrawingCanvasView.swift` (accept artwork ID parameter)
-- `Features/DrawingCanvas/ViewModels/DrawingCanvasViewModel.swift` (load existing artwork logic)
+- [ ] T057 [P] Add app icon and launch screen in ColoringApp/Resources/Assets.xcassets/
+- [ ] T058 [P] Implement accessibility labels (VoiceOver support) for all interactive elements across views
+- [ ] T059 [P] Add haptic feedback for button taps using UIImpactFeedbackGenerator in appropriate views
+- [ ] T060 [P] Optimize memory usage by implementing lazy loading for gallery thumbnails
+- [ ] T061 [P] Add error alerts for storage failures (show StorageError messages) across all ViewModels
+- [ ] T062 Test on physical iPad with Apple Pencil to verify <20ms latency per quickstart.md Section 7
+- [ ] T063 Profile with Instruments to verify 60fps drawing performance and <150MB memory usage per quickstart.md Section 11
+- [ ] T064 Run quickstart.md validation checklist for all P1/P2 features
 
 ---
 
-### Task P2.5: Import Custom Coloring Pages
-**Priority**: P2 (User Story 5)  
-**Complexity**: Medium (3-4 hours)  
-**Dependencies**: P1.1  
-**Owner**: Developer
+## Dependencies & Execution Order
 
-**Description**: Add ability to import custom coloring page images from device photo library using iOS photo picker.
+### Phase Dependencies
 
-**Acceptance Criteria**:
-- [ ] "Add Coloring Page" button visible in gallery
-- [ ] Tapping button opens PHPickerViewController (iOS 14+ photo picker)
-- [ ] Selecting an image imports it as a custom coloring page
-- [ ] Custom page appears in gallery alongside built-in pages
-- [ ] Custom page usable for coloring (same as built-in)
-- [ ] Test: Tap add, select photo, see it in gallery, color it
+- **Setup (Phase 1)**: No dependencies - can start immediately (requires Mac with Xcode)
+- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
+- **User Stories (Phase 3-9)**: All depend on Foundational phase completion
+  - User stories can proceed in parallel (if multiple developers) or sequentially by priority
+  - P1 stories (US1-3) should be completed first for MVP
+  - P2 stories (US4-5) add persistence and customization
+  - P3 stories (US6-7) add polish features
+- **Polish (Phase 10)**: Depends on all desired user stories being complete
 
-**Implementation Notes**:
-- Use `PHPickerViewController` for privacy-first photo picking
-- Wrap PHPickerViewController in `UIViewControllerRepresentable` for SwiftUI
-- Filter to images only: `PHPickerConfiguration.filter = .images`
-- Save imported image to Documents/ColoringPages/ directory
-- Generate thumbnail and save to asset catalog or file system
-- Update `ColoringPageRepository` to include custom pages in `loadAll()`
+### User Story Dependencies
 
-**Files to Create**:
-- `Features/ColoringPageGallery/Views/PhotoPickerView.swift` (UIViewControllerRepresentable wrapper)
-- `Core/Storage/ImageProcessor.swift` (scale/optimize imported images)
+- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
+- **User Story 2 (P1)**: Depends on US1 (needs DrawingCanvasView from T018) - Integrates drawing into existing canvas
+- **User Story 3 (P1)**: Depends on US2 (needs PKCanvasView from T020) - Adds undo/redo to existing drawing
+- **User Story 4 (P2)**: Depends on US2 (needs PKDrawing from drawing canvas) - Adds persistence
+- **User Story 5 (P2)**: Can start after Foundational (Phase 2) - Independent (imports pages, doesn't need drawing)
+- **User Story 6 (P3)**: Depends on US2 (extends brush system) - Adds special effects
+- **User Story 7 (P3)**: Depends on US1 and US4 (needs navigation and save logic) - Adds workflow navigation
 
-**Files to Update**:
-- `Features/ColoringPageGallery/Views/ColoringPageGalleryView.swift` (add import button)
-- `Core/Storage/ColoringPageRepository.swift` (support custom pages)
+### Within Each User Story
 
----
+- Tasks marked [P] can run in parallel (different files)
+- Non-parallel tasks have dependencies (check "depends on TX" notes)
+- Models before services
+- Services before UI
+- Core implementation before integration
+- Story complete and tested before moving to next priority
 
-## Phase P3: Polish & Enhancements
+### Parallel Opportunities
 
-### Task P3.1: Special Brush Effects (Rainbow)
-**Priority**: P3 (User Story 6 - rainbow)  
-**Complexity**: Medium (3-4 hours)  
-**Dependencies**: P1.3  
-**Owner**: Developer
-
-**Description**: Add a rainbow brush that creates multi-color gradient strokes.
-
-**Acceptance Criteria**:
-- [ ] Rainbow brush option visible in brush palette
-- [ ] Selecting rainbow brush enables gradient effect
-- [ ] Drawing with rainbow brush creates colorful gradient strokes
-- [ ] Effect performs smoothly at 60fps
-- [ ] Test: Select rainbow, draw curvy line, see smooth color transitions
-
-**Implementation Notes**:
-- PencilKit doesn't support multi-color strokes natively
-- Options:
-  1. Use custom `PKInkingTool` with Core Graphics gradient (complex)
-  2. Cycle through colors programmatically as user draws (simpler)
-  3. Post-process strokes to apply gradient shader (advanced)
-- Recommended: Start with option 2 (cycle colors) for learning
-- Change ink color every N points along stroke path
-- Document limitations in user-facing UI ("simplified rainbow effect")
-
-**Files to Update**:
-- `Features/BrushTools/Views/ColorPaletteView.swift` (add rainbow button)
-- `Features/BrushTools/Models/Brush.swift` (add BrushType.rainbow enum case)
-- `Features/DrawingCanvas/ViewModels/DrawingCanvasViewModel.swift` (rainbow logic)
+- All Setup tasks (T002, T003) can run in parallel with T001 once project created
+- All Foundational model/protocol tasks (T005-T011) can run in parallel
+- Within US1: T014 and T015 can run in parallel
+- Within US2: T020, T021, T022 can all run in parallel
+- Within US3: T027, T028, T029 can all run in parallel
+- Within US4: T032, T033, T034, T035, T036 can all run in parallel
+- Within US5: T042, T043 can run in parallel
+- Within US6: T048, T049 can run in parallel
+- Within US7: T053, T054 can run in parallel
+- All Polish tasks (T057-T061) can run in parallel
 
 ---
 
-### Task P3.2: Special Brush Effects (Sparkle)
-**Priority**: P3 (User Story 6 - sparkle)  
-**Complexity**: Hard (5-6 hours)  
-**Dependencies**: P1.3  
-**Owner**: Developer
+## Parallel Example: User Story 2
 
-**Description**: Add a sparkle brush that creates glittery/shimmering visual effects on strokes.
+```bash
+# Launch all model/view tasks for User Story 2 together:
+Task T020: "Create PKCanvasViewRepresentable in ColoringApp/Features/DrawingCanvas/Views/PKCanvasViewRepresentable.swift"
+Task T021: "Create ColorPaletteView in ColoringApp/Features/BrushTools/Views/ColorPaletteView.swift"
+Task T022: "Create DrawingCanvasViewModel in ColoringApp/Features/DrawingCanvas/ViewModels/DrawingCanvasViewModel.swift"
 
-**Acceptance Criteria**:
-- [ ] Sparkle brush option visible in brush palette
-- [ ] Selecting sparkle brush enables sparkle effect
-- [ ] Drawing with sparkle brush creates glittery appearance
-- [ ] Effect performs smoothly (no lag/stuttering)
-- [ ] Test: Select sparkle, draw, see sparkle particles or shimmer
-
-**Implementation Notes**:
-- This is significantly harder than rainbow—requires custom rendering
-- Options:
-  1. Particle system overlay (CAEmitterLayer) following stroke path
-  2. Custom texture on `PKInkingTool` (limited control)
-  3. Post-process with Core Image filters (shimmering effect)
-- Recommended: Use CAEmitterLayer with star/dot particles
-- Attach emitter layer to PKCanvasView, update position as strokes drawn
-- Performance critical: Limit particle count, use simple shapes
-- Consider deferring this to future iteration if too complex
-
-**Files to Update**:
-- `Features/BrushTools/Views/ColorPaletteView.swift` (add sparkle button)
-- `Features/BrushTools/Models/Brush.swift` (add BrushType.sparkle enum case)
-- `Features/DrawingCanvas/ViewModels/DrawingCanvasViewModel.swift` (sparkle logic)
-- Possibly: `Features/DrawingCanvas/Views/SparkleEffectView.swift` (custom overlay)
+# Then integration tasks sequentially (T023-T026) as they depend on the parallel tasks
+```
 
 ---
 
-### Task P3.3: Start Fresh / New Page Navigation
-**Priority**: P3 (User Story 7)  
-**Complexity**: Simple (1-2 hours)  
-**Dependencies**: P1.1, P1.2  
-**Owner**: Developer
+## Implementation Strategy
 
-**Description**: Add navigation to return to gallery and start a new coloring page. Prompt to save unsaved work.
+### MVP First (User Stories 1-3 Only)
 
-**Acceptance Criteria**:
-- [ ] "New Page" button visible in drawing canvas UI
-- [ ] Tapping button returns to coloring page gallery
-- [ ] If unsaved changes exist, prompt user: "Save before leaving?"
-- [ ] User can choose: Save, Discard, Cancel
-- [ ] Test: Color a page (don't save), tap new page, see save prompt, choose save, verify artwork saved
+1. Complete Phase 1: Setup (on Mac with Xcode)
+2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
+3. Complete Phase 3: User Story 1 (gallery and page selection)
+4. Complete Phase 4: User Story 2 (drawing with colors)
+5. Complete Phase 5: User Story 3 (erase and undo)
+6. **STOP and VALIDATE**: Test all P1 stories on physical iPad with Apple Pencil
+7. Deploy to household iPads via sideloading or TestFlight
 
-**Implementation Notes**:
-- Use SwiftUI navigation: `@Environment(\.dismiss)` to pop back to gallery
-- Track unsaved changes: Compare current `PKDrawing` hash with last saved version
-- Show `Alert` with 3 buttons: "Save", "Discard", "Cancel"
-- "Save" button: Call save action, then dismiss
-- "Discard" button: Dismiss without saving
-- "Cancel" button: Stay on canvas
+### Incremental Delivery
 
-**Files to Update**:
-- `Features/DrawingCanvas/Views/DrawingCanvasView.swift` (add "New Page" button, save prompt)
-- `Features/DrawingCanvas/ViewModels/DrawingCanvasViewModel.swift` (unsaved changes tracking)
+1. Complete Setup + Foundational → Foundation ready
+2. Add US1 → Test independently → Demo to family
+3. Add US2 → Test independently → Kids can color! (MVP!)
+4. Add US3 → Test independently → Mistake correction working
+5. Add US4-5 → Test independently → Persistence and custom pages
+6. Add US6-7 → Test independently → Full feature set
+7. Each story adds value without breaking previous stories
 
----
+### Parallel Team Strategy
 
-## Testing & Quality Assurance
+With hybrid Windows PC (code drafting) + MacBook Pro (building/testing) workflow:
 
-### Task QA.1: Unit Tests for Repositories
-**Priority**: P2 (testing for core storage)  
-**Complexity**: Medium (3-4 hours)  
-**Dependencies**: P2.1  
-**Owner**: Developer
-
-**Description**: Write unit tests for ColoringPageRepository and ArtworkRepository using XCTest.
-
-**Acceptance Criteria**:
-- [ ] Test ColoringPageRepository.loadAll() returns built-in pages
-- [ ] Test ColoringPageRepository.importCustomPage() saves image correctly
-- [ ] Test ArtworkRepository.save() creates files in correct directory structure
-- [ ] Test ArtworkRepository.loadMetadata() returns saved artwork metadata
-- [ ] Test error handling (invalid image, storage full, corrupted files)
-- [ ] All tests pass in Xcode Test Navigator
-
-**Implementation Notes**:
-- Use XCTest framework (built into Xcode)
-- Create mock file system using temporary directory for tests
-- Reference: `contracts/README.md` Section 5 (Mock Implementations)
-- Test data: Use small test images from Resources/TestAssets/
-- Clean up test files in `tearDown()` method
-
-**Files to Create**:
-- `ColoringAppTests/Core/ColoringPageRepositoryTests.swift`
-- `ColoringAppTests/Core/ArtworkRepositoryTests.swift`
-- `ColoringAppTests/Mocks/MockFileManager.swift`
-
----
-
-### Task QA.2: UI Tests for Critical User Flows
-**Priority**: P3 (end-to-end validation)  
-**Complexity**: Medium (3-4 hours)  
-**Dependencies**: P1.1, P1.2, P2.2  
-**Owner**: Developer
-
-**Description**: Write UI automation tests for User Stories 1-4 using XCUITest.
-
-**Acceptance Criteria**:
-- [ ] Test: Launch app → see gallery → tap page → page loads in canvas
-- [ ] Test: Load page → select color → draw stroke → stroke appears
-- [ ] Test: Draw strokes → tap eraser → erase → strokes removed
-- [ ] Test: Draw → tap undo → last stroke removed
-- [ ] Test: Draw → tap save → success message → gallery shows saved artwork
-- [ ] All tests pass on iPad Simulator
-
-**Implementation Notes**:
-- Use XCUITest framework (UI automation for iOS)
-- Access UI elements via accessibility identifiers (add to SwiftUI views)
-- Run tests in iPad Simulator (UI tests require simulator or device)
-- Reference: Apple's XCUITest documentation
-- Keep tests simple for learning—focus on happy paths
-
-**Files to Create**:
-- `ColoringAppUITests/ColoringFlowUITests.swift`
-
----
-
-## Deployment & Documentation
-
-### Task D.1: TestFlight Beta Deployment
-**Priority**: Optional (after P1 complete)  
-**Complexity**: Medium (2-3 hours)  
-**Dependencies**: P1.5  
-**Owner**: Developer
-
-**Description**: Deploy the app to TestFlight for household testing on family iPads.
-
-**Acceptance Criteria**:
-- [ ] App successfully archived in Xcode
-- [ ] App uploaded to App Store Connect
-- [ ] TestFlight build available for internal testing
-- [ ] Family members can install via TestFlight app
-- [ ] Test: Install on 2+ household iPads, verify basic functionality
-
-**Implementation Notes**:
-- Follow `quickstart.md` Section 9 (TestFlight & App Store)
-- Requires paid Apple Developer account ($99/year) OR
-- Alternative: Use free sideloading (7-day expiration) per `quickstart.md` Section 7
-- TestFlight internal testing: No review required, instant deployment
-- Add family members as internal testers in App Store Connect
-
----
-
-### Task D.2: User Documentation
-**Priority**: P3 (helpful for family use)  
-**Complexity**: Simple (1-2 hours)  
-**Dependencies**: P3.3 (all features complete)  
-**Owner**: Developer
-
-**Description**: Create simple user guide for children and parents.
-
-**Acceptance Criteria**:
-- [ ] README.md in repository with "How to Use" section
-- [ ] Document key features: selecting pages, coloring, saving, importing
-- [ ] Include screenshots of main screens
-- [ ] Troubleshooting section for common issues
-- [ ] Age-appropriate language (simple, clear instructions)
-
-**Implementation Notes**:
-- Add to repository root: `docs/USER_GUIDE.md`
-- Use screenshots from iPad Simulator or actual device
-- Cover all P1/P2 features, note P3 as optional enhancements
-- Parent section: How to import custom coloring pages
-- Child section: How to color, save, and start new pages
-
-**Files to Create**:
-- `docs/USER_GUIDE.md`
+1. Complete Setup + Foundational on Mac
+2. Draft implementation code on Windows PC using VS Code + GitHub Copilot
+3. Commit code to GitHub
+4. Pull and test on Mac with Xcode + iPad Simulator
+5. Fix compilation errors and test on physical iPad
+6. Iterate between Windows drafting and Mac validation
 
 ---
 
 ## Summary
 
-**Total Tasks**: 21 (6 P0, 5 P1, 5 P2, 3 P3, 2 QA, 2 Deployment)
+**Total Tasks**: 64
 
-**Estimated Timeline** (solo developer, part-time):
-- **P0 (Setup)**: 1-2 days
-- **P1 (Core Coloring)**: 1-2 weeks
-- **P2 (Persistence & Import)**: 1 week
-- **P3 (Polish)**: 1 week
-- **QA & Deployment**: 3-5 days
+- **Phase 1 (Setup)**: 4 tasks
+- **Phase 2 (Foundational)**: 9 tasks
+- **Phase 3 (US1 - P1)**: 6 tasks
+- **Phase 4 (US2 - P1)**: 7 tasks
+- **Phase 5 (US3 - P1)**: 5 tasks
+- **Phase 6 (US4 - P2)**: 10 tasks
+- **Phase 7 (US5 - P2)**: 6 tasks
+- **Phase 8 (US6 - P3)**: 5 tasks
+- **Phase 9 (US7 - P3)**: 4 tasks
+- **Phase 10 (Polish)**: 8 tasks
 
-**Total**: ~4-6 weeks of part-time work (10-15 hours/week)
+**Parallel Opportunities**: 24 tasks marked [P] across all phases
 
-**Critical Path**: P0 → P1.1 → P1.2 → P1.3 → P1.4 → P1.5 (Core coloring experience)
+**MVP Scope**: Phases 1-5 (User Stories 1-3 = 31 tasks total) delivers core coloring experience
 
-**Suggested Development Order**:
-1. Complete all P0 tasks (project setup)
-2. Complete P1 tasks in sequence (1.1 → 1.2 → 1.3 → 1.4 → 1.5)
-3. Demo core coloring to family, gather feedback
-4. Complete P2 tasks (persistence and import)
-5. Optional: Complete P3 tasks (special effects and polish)
-6. Write tests (QA.1, QA.2)
-7. Deploy to TestFlight or sideload to family iPads
+**Estimated Timeline** (solo developer, part-time per plan.md):
 
-**Next Steps**: Begin with Task P0.1 (Create Xcode Project) on MacBook Pro following `quickstart.md`.
+- MVP (P1 stories): 2-3 weeks
+- Full P1+P2: 4-5 weeks
+- All features: 5-6 weeks
+
+**Next Step**: Begin T001 on MacBook Pro following quickstart.md
